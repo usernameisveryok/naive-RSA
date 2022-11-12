@@ -7,12 +7,8 @@
 using namespace std;
 #include <random>
 #include <limits>
-std::random_device rd;     // Get a random seed from the OS entropy device, or whatever
-std::mt19937_64 eng(rd()); // Use the 64-bit Mersenne Twister 19937 generator
-                           // and seed it with entropy.
-
-// Define the distribution, by default it goes from 0 to MAX(unsigned long long)
-// or what have you.
+std::random_device rd;
+std::mt19937_64 eng(rd());
 std::uniform_int_distribution<unsigned int> distr;
 LL mulmod(LL a, LL b, LL mod)
 {
@@ -184,6 +180,47 @@ void key_gen(LL &p, LL &q, LL &phi, LL &e, LL &n, LL &k)
          << "n:  " << setfill('0') << setw(16) << n << '\n'
          << "e:  " << setfill('0') << setw(16) << e << '\n';
 }
+void change_key(LL &p, LL &q, LL &phi, LL &e, LL &n, LL &k)
+{
+    cout << "enter p(hex)\n";
+    cin.setf(ios_base::hex, ios_base::basefield);
+    cin >> p;
+    if (!is_prime(p))
+    {
+        cerr << "p is not a prime!";
+        return;
+    }
+    cout << "enter q(hex)\n";
+    cin >> q;
+    if (!is_prime(q))
+    {
+        cerr << "q is not a prime!";
+        return;
+    }
+    cout << "enter e(hex)\n";
+    cin >> e;
+    if (!is_prime(e))
+    {
+        cerr << "e is not a prime!";
+        return;
+    }
+    long long tmp;
+    long long kk;
+    ext_euclid(e, phi, kk, tmp);
+    k = (kk + phi) % phi;
+    if ((e * k) % phi != 1)
+    {
+        cerr << "runtime error";
+        return;
+    }
+    cout << setiosflags(ios::uppercase) << hex << "change sucess\n"
+         << "p:  " << setfill('0') << setw(16) << p << '\n'
+         << "q:  " << setfill('0') << setw(16) << q << '\n'
+         << "phi:" << setfill('0') << setw(16) << phi << '\n'
+         << "k:  " << setfill('0') << setw(16) << k << '\n'
+         << "n:  " << setfill('0') << setw(16) << n << '\n'
+         << "e:  " << setfill('0') << setw(16) << e << '\n';
+}
 LL encrypt(string s, LL e, LL n)
 {
     int i = 0;
@@ -210,7 +247,7 @@ string decrypt(LL c, LL k, LL n)
     }
     return out;
 }
-vector<LL> en(string a, LL e, LL n)
+vector<LL> encrypt_all(string a, LL e, LL n)
 {
     vector<LL> out;
 
@@ -231,7 +268,7 @@ vector<LL> en(string a, LL e, LL n)
     }
     return out;
 }
-string de(vector<LL> c, LL k, LL n)
+string decrypt_all(vector<LL> c, LL k, LL n)
 {
     string p;
     for (auto &&i : c)
@@ -263,13 +300,28 @@ int main()
     //     ofile << i << " " << euler_fun(i) << '\n';
     // };
     // ofile.close();
-    key_gen(p, q, phi, e, n, k);
-    cout << "please enter plain text" << endl;
-    string plain;
-    cin >> plain;
-    auto cc = en(plain, e, n);
+    int flag = 1;
 
-    print_cipher(cc);
-    cout << "decrypted:\n" << de(cc, k, n) << endl;
+    do
+    {
+        cout << "0:exit\n1:auto\n2:manual\n";
+        cin >> flag;
+        if (flag == 1)
+        {
+            key_gen(p, q, phi, e, n, k);
+        }
+        else
+        {
+            change_key(p, q, phi, e, n, k);
+        }
+        cout << "please enter plain text" << endl;
+        string plain;
+        cin >> plain;
+        auto cc = encrypt_all(plain, e, n);
+        print_cipher(cc);
+        cout << "decrypted:\n"
+             << decrypt_all(cc, k, n) << endl;
+    } while (flag);
+
     return 0;
 }
